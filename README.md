@@ -1,5 +1,7 @@
 # TAKA Store POS — Full Stack
 
+![POS Preview](pos.png)
+
 POS (Point of Sale) system: **Next.js 14 (App Router) + TypeScript + Tailwind + Prisma + MySQL**. Frontend + backend API disatukan dalam satu project, satu perintah `npm run dev`.
 
 ## Fitur
@@ -32,7 +34,7 @@ npm run dev                     # http://localhost:3000
 `.env.local`:
 
 ```
-DATABASE_URL="mysql://umarvps:umarvps@20.205.41.160:3306/pos"
+DATABASE_URL="mysql://user:pass@ip:port/password"
 JWT_SECRET="change-this-to-a-long-random-string-before-deploying"
 JWT_EXPIRES_IN="7d"
 ```
