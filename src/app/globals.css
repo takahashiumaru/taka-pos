@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 160 84% 39%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 35% 14%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 35% 14%;
+    --muted-foreground: 215 16% 65%;
+
+    --accent: 222 35% 14%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 222 35% 18%;
+    --input: 222 35% 18%;
+    --ring: 160 84% 39%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .no-print {
+    @media print {
+      display: none !important;
+    }
+  }
+  .only-print {
+    display: none;
+    @media print {
+      display: block !important;
+    }
+  }
+}
+
+/* Print: when a [data-receipt] element exists, render only the receipt */
+@media print {
+  @page {
+    size: auto;
+    margin: 6mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  /* Hide sonner toasts on print everywhere */
+  [data-sonner-toaster],
+  [data-sonner-toast] {
+    display: none !important;
+  }
+  /* When receipt is on the page, hide everything except the receipt */
+  body:has([data-receipt]) * {
+    visibility: hidden !important;
+  }
+  body:has([data-receipt]) [data-receipt],
+  body:has([data-receipt]) [data-receipt] * {
+    visibility: visible !important;
+  }
+  body:has([data-receipt]) [data-receipt] {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    padding: 4mm !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+}

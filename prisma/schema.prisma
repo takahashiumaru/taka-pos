@@ -1,0 +1,195 @@
+// TAKA Store POS — Prisma schema (MySQL)
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Users ----------
+enum UserRole {
+  ADMIN
+  MANAGER
+  CASHIER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         UserRole @default(CASHIER)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  transactions  Transaction[]          @relation("CashierTransactions")
+  voidedTxns    Transaction[]          @relation("VoidedByUser")
+  movements     InventoryMovement[]
+
+  @@map("users")
+}
+
+// ---------- Categories ----------
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  products Product[]
+
+  @@map("categories")
+}
+
+// ---------- Products ----------
+model Product {
+  id          String   @id @default(cuid())
+  sku         String   @unique
+  barcode     String   @unique
+  name        String
+  description String?  @db.Text
+  price       Int      // in IDR (integer, no decimals)
+  cost        Int      @default(0)
+  unit        String   @default("pcs")
+  stock       Int      @default(0)
+  minStock    Int      @default(0) @map("min_stock")
+  active      Boolean  @default(true)
+  imageBase64 String?  @db.LongText @map("image_base64")
+  categoryId  String?  @map("category_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category    Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  movements   InventoryMovement[]
+  items       TransactionItem[]
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+// ---------- Customers ----------
+enum MemberLevel {
+  REGULAR
+  SILVER
+  GOLD
+}
+
+model Customer {
+  id          String      @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  memberLevel MemberLevel @default(REGULAR) @map("member_level")
+  notes       String?     @db.Text
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  transactions Transaction[]
+
+  @@map("customers")
+}
+
+// ---------- Inventory ----------
+enum MovementType {
+  IN
+  OUT
+  ADJUST
+}
+
+model InventoryMovement {
+  id         String       @id @default(cuid())
+  productId  String       @map("product_id")
+  type       MovementType
+  qty        Int          // Positive for IN, negative for OUT, delta for ADJUST
+  reason     String?
+  refInvoice String?      @map("ref_invoice")
+  userId     String?      @map("user_id")
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  product    Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("inventory_movements")
+}
+
+// ---------- Transactions ----------
+enum PaymentMethod {
+  CASH
+  CARD
+  QRIS
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PAID
+  VOID
+}
+
+model Transaction {
+  id              String             @id // invoice number e.g. INV-20260428-0001
+  userId          String             @map("user_id")
+  customerId      String?            @map("customer_id")
+  subtotal        Int
+  discount        Int                @default(0)
+  tax             Int                @default(0)
+  total           Int
+  paymentMethod   PaymentMethod      @map("payment_method")
+  cashReceived    Int?               @map("cash_received")
+  changeAmount    Int?               @map("change_amount")
+  status          TransactionStatus  @default(PAID)
+  notes           String?            @db.Text
+  voidedAt        DateTime?          @map("voided_at")
+  voidedById      String?            @map("voided_by_id")
+  voidedReason    String?            @map("voided_reason")
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  user       User              @relation("CashierTransactions", fields: [userId], references: [id])
+  customer   Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  voidedBy   User?             @relation("VoidedByUser", fields: [voidedById], references: [id], onDelete: SetNull)
+  items      TransactionItem[]
+
+  @@index([userId])
+  @@index([customerId])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+model TransactionItem {
+  id            String   @id @default(cuid())
+  transactionId String   @map("transaction_id")
+  productId     String   @map("product_id")
+  name          String   // denormalized at time of sale
+  price         Int      // unit price at time of sale
+  qty           Int
+  discount      Int      @default(0)
+  subtotal      Int
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product       Product     @relation(fields: [productId], references: [id])
+
+  @@index([transactionId])
+  @@index([productId])
+  @@map("transaction_items")
+}
+
+// ---------- Settings (single row) ----------
+model Settings {
+  id                    Int      @id @default(1)
+  storeName             String   @default("TAKA Store") @map("store_name")
+  storeAddress          String?  @map("store_address") @db.Text
+  storePhone            String?  @map("store_phone")
+  taxRate               Float    @default(0.11) @map("tax_rate") // 11%
+  currency              String   @default("IDR")
+  receiptFooter         String?  @map("receipt_footer") @db.Text
+  paymentMethods        String   @default("CASH,CARD,QRIS,TRANSFER") @map("payment_methods") // CSV
+  lowStockAlertEnabled  Boolean  @default(true) @map("low_stock_alert_enabled")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
