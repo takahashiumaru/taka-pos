@@ -189,6 +189,8 @@ model Settings {
   receiptFooter         String?  @map("receipt_footer") @db.Text
   paymentMethods        String   @default("CASH,CARD,QRIS,TRANSFER") @map("payment_methods") // CSV
   lowStockAlertEnabled  Boolean  @default(true) @map("low_stock_alert_enabled")
+  storeLogo             String?  @map("store_logo") @db.LongText
+  grayscaleLogo         Boolean  @default(false) @map("grayscale_logo")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
