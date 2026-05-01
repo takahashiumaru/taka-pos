@@ -32,6 +32,8 @@ import { ApiError } from "@/lib/api";
 import { PaymentMethod, UserRole } from "@/lib/types";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 const allMethods: PaymentMethod[] = ["cash", "card", "qris", "transfer"];
 
@@ -54,6 +56,12 @@ export default function SettingsPage() {
   const [allowBackorder, setAllowBackorder] = React.useState(
     settings.allowBackorder
   );
+  const [storeLogo, setStoreLogo] = React.useState(settings.storeLogo || "");
+  const [grayscaleLogo, setGrayscaleLogo] = React.useState(
+    settings.grayscaleLogo
+  );
+  const [deleteUserId, setDeleteUserId] = React.useState<string | null>(null);
+  const [deleteUserName, setDeleteUserName] = React.useState("");
 
   async function saveStore(e: React.FormEvent) {
     e.preventDefault();
@@ -68,6 +76,8 @@ export default function SettingsPage() {
         taxInclusive,
         receiptFooter,
         allowBackorder,
+        storeLogo,
+        grayscaleLogo,
       });
       toast.success("Pengaturan disimpan");
     } catch (err) {
@@ -262,19 +272,102 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="appearance">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Tema</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <ThemeToggle />
-                  <p className="text-sm text-muted-foreground">
-                    Pilih Light / Dark / System
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Tema</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3">
+                    <ThemeToggle />
+                    <p className="text-sm text-muted-foreground">
+                      Pilih Light / Dark / System
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Logo Toko</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="relative h-24 w-24 overflow-hidden rounded-md border flex items-center justify-center">
+                      {storeLogo ? (
+                        <img
+                          src={storeLogo}
+                          alt="Store Logo"
+                          className={cn(
+                            "h-full w-full object-contain",
+                            grayscaleLogo && "grayscale"
+                          )}
+                        />
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground text-center px-1">
+                          Belum ada logo
+                        </p>
+                      )}
+                    </div>
+                    <div className="w-full space-y-2">
+                      <Label htmlFor="logo-upload" className="cursor-pointer">
+                        <div className="flex w-full items-center justify-center rounded-md border border-dashed p-4 hover:bg-accent/50 transition-colors">
+                          <p className="text-xs text-muted-foreground">
+                            Klik untuk upload logo (PNG/JPG)
+                          </p>
+                        </div>
+                        <input
+                          id="logo-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setStoreLogo(reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </Label>
+                      {storeLogo && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-destructive"
+                          onClick={() => setStoreLogo("")}
+                        >
+                          Hapus Logo
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <div className="space-y-0.5">
+                      <Label>Logo Hitam Putih</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Aktifkan efek grayscale pada logo
+                      </p>
+                    </div>
+                    <Switch
+                      checked={grayscaleLogo}
+                      onCheckedChange={setGrayscaleLogo}
+                    />
+                  </div>
+                  <Button
+                    onClick={saveStore}
+                    disabled={savingStore}
+                    className="w-full"
+                  >
+                    Simpan Perubahan Tampilan
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="users">
@@ -351,15 +444,9 @@ export default function SettingsPage() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={async () => {
-                                if (!confirm(`Hapus "${u.name}"?`)) return;
-                                try {
-                                  await deleteUserApi(u.id);
-                                  toast.success("User dihapus");
-                                } catch (err) {
-                                  const msg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Gagal";
-                                  toast.error(msg);
-                                }
+                              onClick={() => {
+                                setDeleteUserId(u.id);
+                                setDeleteUserName(u.name);
                               }}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -454,6 +541,24 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </PageBody>
+
+      <ConfirmDialog
+        open={!!deleteUserId}
+        onOpenChange={(open) => !open && setDeleteUserId(null)}
+        title="Hapus User"
+        description={`Apakah Anda yakin ingin menghapus user "${deleteUserName}"? Tindakan ini tidak dapat dibatalkan.`}
+        onConfirm={async () => {
+          if (!deleteUserId) return;
+          try {
+            await deleteUserApi(deleteUserId);
+            toast.success("User dihapus");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Gagal menghapus");
+          } finally {
+            setDeleteUserId(null);
+          }
+        }}
+      />
     </>
   );
 }

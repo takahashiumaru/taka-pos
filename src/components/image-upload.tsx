@@ -34,7 +34,8 @@ async function fileToCompressedDataUrl(
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+        // Change to image/png to support transparency
+        resolve(canvas.toDataURL("image/png"));
       };
       img.onerror = () => reject(new Error("Invalid image"));
       img.src = reader.result as string;

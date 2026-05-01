@@ -20,6 +20,20 @@ export function Receipt({ transaction }: { transaction: Transaction }) {
       data-receipt
     >
       <div className="text-center">
+        {settings.storeLogo && (
+          <div className="mb-2 flex justify-center">
+            <img
+              src={settings.storeLogo}
+              alt={settings.storeName}
+              style={{
+                width: 64,
+                height: 64,
+                objectFit: "contain",
+                filter: settings.grayscaleLogo ? "grayscale(100%)" : "none",
+              }}
+            />
+          </div>
+        )}
         <p className="text-base font-semibold">{settings.storeName}</p>
         <p className="text-[11px]">{settings.address}</p>
         <p className="text-[11px]">Tel: {settings.phone}</p>

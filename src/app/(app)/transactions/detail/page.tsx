@@ -19,6 +19,17 @@ import { useStore } from "@/lib/store";
 import { voidTransactionApi } from "@/lib/sync";
 import { ApiError } from "@/lib/api";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Receipt } from "@/components/receipt";
 import { toast } from "sonner";
 
@@ -44,6 +55,8 @@ function TransactionDetailInner() {
   const products = useStore((s) => s.products);
   const customers = useStore((s) => s.customers);
   const [voiding, setVoiding] = React.useState(false);
+  const [voidDialogOpen, setVoidDialogOpen] = React.useState(false);
+  const [voidReason, setVoidReason] = React.useState("Customer refund");
 
   if (!tx) {
     return (
@@ -100,27 +113,63 @@ function TransactionDetailInner() {
             <Printer className="h-4 w-4" /> Print
           </Button>
           {tx.status === "paid" ? (
-            <Button
-              variant="destructive"
-              disabled={voiding}
-              onClick={async () => {
-                const reason = window.prompt("Alasan void transaksi? (stok akan dikembalikan)", "Customer refund");
-                if (!reason || !reason.trim()) return;
-                setVoiding(true);
-                try {
-                  await voidTransactionApi(tx.id, reason.trim());
-                  toast.success("Transaksi divoid");
-                } catch (err) {
-                  const msg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Gagal void";
-                  toast.error(msg);
-                } finally {
-                  setVoiding(false);
-                }
-              }}
-              className="no-print"
-            >
-              <Ban className="h-4 w-4" /> Void
-            </Button>
+            <Dialog open={voidDialogOpen} onOpenChange={setVoidDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="destructive" className="no-print">
+                  <Ban className="h-4 w-4" /> Void
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Void Transaksi</DialogTitle>
+                  <DialogDescription>
+                    Alasan void transaksi? Stok produk akan dikembalikan ke
+                    inventori.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <Label htmlFor="void-reason">Alasan</Label>
+                  <Input
+                    id="void-reason"
+                    value={voidReason}
+                    onChange={(e) => setVoidReason(e.target.value)}
+                    placeholder="Contoh: Kesalahan input, Customer refund..."
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setVoidDialogOpen(false)}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    disabled={voiding || !voidReason.trim()}
+                    onClick={async () => {
+                      setVoiding(true);
+                      try {
+                        await voidTransactionApi(tx.id, voidReason.trim());
+                        toast.success("Transaksi divoid");
+                        setVoidDialogOpen(false);
+                      } catch (err) {
+                        const msg =
+                          err instanceof ApiError
+                            ? err.message
+                            : err instanceof Error
+                            ? err.message
+                            : "Gagal void";
+                        toast.error(msg);
+                      } finally {
+                        setVoiding(false);
+                      }
+                    }}
+                  >
+                    Void Transaksi
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           ) : null}
         </div>
       </div>
@@ -246,7 +295,7 @@ function TransactionDetailInner() {
           <h3 className="px-1 text-sm font-medium text-muted-foreground">
             Struk
           </h3>
-          <div className="rounded-md border bg-white text-black shadow-sm">
+          <div className="rounded-md border shadow-sm">
             <Receipt transaction={tx} />
           </div>
         </div>

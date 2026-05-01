@@ -224,6 +224,8 @@ export interface ApiSettings {
   receiptFooter: string | null;
   paymentMethods: string; // CSV
   lowStockAlertEnabled: boolean;
+  storeLogo: string | null;
+  grayscaleLogo: boolean;
 }
 export const settingsFromApi = (s: ApiSettings): StoreSettings => ({
   storeName: s.storeName,
@@ -237,6 +239,8 @@ export const settingsFromApi = (s: ApiSettings): StoreSettings => ({
     ? s.paymentMethods.split(",").map((m) => m.trim().toLowerCase()).filter(Boolean) as PaymentMethod[]
     : ["cash", "card", "qris", "transfer"],
   allowBackorder: false,
+  storeLogo: s.storeLogo ?? undefined,
+  grayscaleLogo: s.grayscaleLogo ?? false,
 });
 export const settingsToApiUpdate = (patch: Partial<StoreSettings>): Partial<ApiSettings> => {
   const out: Partial<ApiSettings> = {};
@@ -248,5 +252,7 @@ export const settingsToApiUpdate = (patch: Partial<StoreSettings>): Partial<ApiS
   if (patch.receiptFooter !== undefined) out.receiptFooter = patch.receiptFooter || null;
   if (patch.enableMethods !== undefined)
     out.paymentMethods = patch.enableMethods.map((m) => m.toUpperCase()).join(",");
+  if (patch.storeLogo !== undefined) out.storeLogo = patch.storeLogo || null;
+  if (patch.grayscaleLogo !== undefined) out.grayscaleLogo = patch.grayscaleLogo;
   return out;
 };

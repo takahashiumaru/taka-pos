@@ -13,6 +13,8 @@ const updateSchema = z.object({
   receiptFooter: z.string().max(500).nullable().optional(),
   paymentMethods: z.string().max(200).optional(),
   lowStockAlertEnabled: z.boolean().optional(),
+  storeLogo: z.string().nullable().optional(),
+  grayscaleLogo: z.boolean().optional(),
 });
 
 async function getOrCreateSettings() {

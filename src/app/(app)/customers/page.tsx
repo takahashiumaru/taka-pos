@@ -30,6 +30,7 @@ import { ApiError } from "@/lib/api";
 import { Customer } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 export default function CustomersPage() {
   const customers = useStore((s) => s.customers);
@@ -43,6 +44,8 @@ export default function CustomersPage() {
     phone: "",
     email: "",
   });
+  const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [deleteName, setDeleteName] = React.useState("");
 
   const filtered = customers.filter((c) =>
     [c.name, c.phone, c.email].join(" ").toLowerCase().includes(query.toLowerCase())
@@ -178,10 +181,8 @@ export default function CustomersPage() {
                               size="icon"
                               variant="ghost"
                               onClick={() => {
-                                if (confirm(`Hapus "${c.name}"?`)) {
-                                  deleteCustomerApi(c.id).catch((err) => toast.error(err instanceof Error ? err.message : "Gagal"));
-                                  toast.success("Pelanggan dihapus");
-                                }
+                                setDeleteId(c.id);
+                                setDeleteName(c.name);
                               }}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -246,6 +247,24 @@ export default function CustomersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="Hapus Pelanggan"
+        description={`Apakah Anda yakin ingin menghapus "${deleteName}"? Tindakan ini tidak dapat dibatalkan.`}
+        onConfirm={async () => {
+          if (!deleteId) return;
+          try {
+            await deleteCustomerApi(deleteId);
+            toast.success("Pelanggan dihapus");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Gagal menghapus");
+          } finally {
+            setDeleteId(null);
+          }
+        }}
+      />
     </>
   );
 }

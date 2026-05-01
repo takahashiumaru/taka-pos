@@ -40,6 +40,7 @@ import { ApiError } from "@/lib/api";
 import { Product } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 type FormState = Omit<Product, "id">;
 
@@ -69,6 +70,8 @@ export default function ProductsPage() {
   const [editing, setEditing] = React.useState<Product | null>(null);
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState<FormState>(emptyForm);
+  const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [deleteName, setDeleteName] = React.useState("");
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -298,15 +301,9 @@ export default function ProductsPage() {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                onClick={async () => {
-                                  if (!confirm(`Hapus produk "${p.name}"?`)) return;
-                                  try {
-                                    await deleteProductApi(p.id);
-                                    toast.success("Produk dihapus");
-                                  } catch (err) {
-                                    const msg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Gagal menghapus";
-                                    toast.error(msg);
-                                  }
+                                onClick={() => {
+                                  setDeleteId(p.id);
+                                  setDeleteName(p.name);
                                 }}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -478,6 +475,24 @@ export default function ProductsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="Hapus Produk"
+        description={`Apakah Anda yakin ingin menghapus "${deleteName}"? Tindakan ini tidak dapat dibatalkan.`}
+        onConfirm={async () => {
+          if (!deleteId) return;
+          try {
+            await deleteProductApi(deleteId);
+            toast.success("Produk dihapus");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Gagal menghapus");
+          } finally {
+            setDeleteId(null);
+          }
+        }}
+      />
     </>
   );
 }
