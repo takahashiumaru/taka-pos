@@ -292,6 +292,8 @@ export const defaultSettings: StoreSettings = {
   receiptFooter: "Terima kasih atas kunjungan Anda!",
   enableMethods: ["cash", "card", "qris", "transfer"],
   allowBackorder: false,
+  storeLogo: undefined,
+  grayscaleLogo: false,
 };
 
 // Generate mock transactions for last 14 days

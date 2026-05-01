@@ -87,6 +87,8 @@ export type StoreSettings = {
   receiptFooter: string;
   enableMethods: PaymentMethod[];
   allowBackorder: boolean;
+  storeLogo?: string;
+  grayscaleLogo: boolean;
 };
 
 export type UserRole = "admin" | "supervisor" | "cashier";
